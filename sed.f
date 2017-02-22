@@ -57,7 +57,7 @@ edlim maxcol 1+ / constant maxrow
 
 \ cursore position in buffert
 : edpoint \ -- ad 
-  crow> lgmc lshift
+  edrow @ lgmc lshift
   edcol @ + 
   edbuf + ;
 
