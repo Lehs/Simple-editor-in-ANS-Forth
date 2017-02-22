@@ -2,6 +2,9 @@
 SED - an editor written with ANS Forth words in a simple and extendable manner.
 
 A buffer EDBUF is thought of as a 64xN array of bytes. 
+There is no address pointer to the buffer, the address is calculated thru the
+variables EDROW and EDCOL.
+
 The main action of the words is to manipulate this buffer and
 secondary to show a part of the buffer on the screen.
 
@@ -10,4 +13,5 @@ which is enough for source files of Forth code.
 
 To be done: 
 scrolling using the variable TOPROW
+fast cursor movments
 load and save files
