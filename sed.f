@@ -1,5 +1,6 @@
-\ Simple Editor - SED. ANS Forth words only
-decimal
+
+\ Simple Editor - SED     2017-02-22 9:07 Greenwish Time
+
 0x80000 constant edlim
 edlim allocate throw constant edbuf 
 
@@ -39,14 +40,15 @@ edlim maxcol 1+ / constant maxrow
 0x80000007 value pgd
 0x80000008 value ins
 0x80000009 value del
-0xA0000009 value dr1   \ ctrl del  (GForth Windows)
-0xC0000009 value dr2   \ ctrl del  (GForth Android)
+0xA0000009 value dr1
+0xC0000009 value dr2
 
 \ general codes
   8 value bs1
 127 value bs2
  10 value cr1
  13 value cr2
+ 12 value ref
   5 value exi
 
 : initialize-sed \ --
@@ -143,6 +145,10 @@ edlim maxcol 1+ / constant maxrow
 
 : delch \ --
   curright backsp ;
+
+: refresh-screen \ --
+  page 0 maxcrows .rows curset ;
+
 \ _______________________________
 
 : sed \ --
@@ -165,7 +171,9 @@ edlim maxcol 1+ / constant maxrow
           dr1 of delrow endof
           dr2 of delrow endof
           ins of insrow endof
+          ref of refresh-screen endof
           exi of 0= endof
         endcase
      then
   until ;
+
