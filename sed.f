@@ -39,7 +39,8 @@ edlim maxcol 1+ / constant maxrow
 0x80000007 value pgd
 0x80000008 value ins
 0x80000009 value del
-0xA0000009 value der
+0xA0000009 value dr1   \ ctrl del  (GForth Windows)
+0xC0000009 value dr2   \ ctrl del  (GForth Android)
 
 \ general codes
   8 value bs1
@@ -53,8 +54,6 @@ edlim maxcol 1+ / constant maxrow
   0 edcol !
   0 toprow !
   edbuf edlim blank ;
-
-: oth dup ;
 
 \ cursore position in buffert
 : edpoint \ -- ad 
@@ -163,10 +162,10 @@ edlim maxcol 1+ / constant maxrow
           hom of home endof 
           end of eol endof
           del of delch endof
-          der of delrow endof
+          dr1 of delrow endof
+          dr2 of delrow endof
           ins of insrow endof
           exi of 0= endof
-          oth of endof
         endcase
      then
   until ;
