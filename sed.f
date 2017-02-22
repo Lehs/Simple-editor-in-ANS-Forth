@@ -1,6 +1,6 @@
-
 \ Simple Editor - SED     2017-02-22 9:07 Greenwich Time
 
+DECIMAL
 0x80000 constant edlim
 edlim allocate throw constant edbuf 
 
