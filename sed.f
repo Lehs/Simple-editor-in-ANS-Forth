@@ -1,6 +1,6 @@
-\ Simple Editor - SED     2017-02-22 9:07 Greenwich Time
+\ Simple Editor - SED     2017-02-22 9:17 Greenwich Time
 
-DECIMAL
+base @ decimal
 0x80000 constant edlim
 edlim allocate throw constant edbuf 
 
@@ -177,3 +177,4 @@ edlim maxcol 1+ / constant maxrow
      then
   until ;
 
+base !
