@@ -15,3 +15,6 @@ To be done:
 scrolling using the variable TOPROW
 fast cursor movments
 load and save files
+
+So far only tested for GForth+Windows. Different possibilities for the implementation of EKEY
+will cause problems for use in all ANS Forth systems.
