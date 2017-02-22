@@ -1,4 +1,4 @@
-\ Simple Editor - SED     2017-02-22 9:17 Greenwich Time
+\ Simple Editor - SED     2017-02-22 19:17 Greenwich Time
 
 base @ decimal
 0x80000 constant edlim
@@ -19,14 +19,25 @@ edlim maxcol 1+ / constant maxrow
 : curset  edcol @ crow> at-xy ;
 : currowmove  crow> + 0 max toprow @ + edrow ! curset ;
 : curcolmove  edcol @ + 0 max maxcol min edcol ! curset ;
+  
 
-\ ___CASE ACTIONS________________
+\ ___CASE ACTIONS not changing the buffer _______________
 
 : curleft  -1 curcolmove ;
 : curright  1 curcolmove ;
 : curup    -1 currowmove ;
 : curdown   1 currowmove ;
-\ _______________________________
+: home  0 edcol ! curset ;
+: attop  0 edrow ! home ;
+
+: bottom \
+  edbuf edlim 1- -trailing
+  nip lgmc rshift edrow ! curdown home ;
+
+: eol \ --
+  crow> lgmc lshift edbuf + maxcol 1+ -trailing
+  edcol ! drop curset ;
+\ _______________________________________________________
 
 
 \ gforth codes
@@ -49,7 +60,9 @@ edlim maxcol 1+ / constant maxrow
  10 value cr1
  13 value cr2
  12 value ref
-  5 value exi
+  5 value exi   \ ctrl e
+  2 value bot   \ ctrl b
+ 20 value top   \ ctrl t 
 
 : initialize-sed \ --
   0 edrow !
@@ -109,9 +122,7 @@ edlim maxcol 1+ / constant maxrow
   dup bl bs2 within 
   if dup inchar true else false then ;
 
-\ ___CASE ACTIONS________________
-
-: home  0 edcol ! curset ;
+\ ___CASE ACTIONS changing the buffer____________________
 
 : return \ --
   rowins rowenddown 
@@ -119,11 +130,10 @@ edlim maxcol 1+ / constant maxrow
   curdown home ;
 
 : insrow \ --
-  rowins .rows-below curset ; 
-
-: eol \ --
-  crow> lgmc lshift edbuf + maxcol 1+ -trailing
-  edcol ! drop curset ;
+  -1 edrow +! 
+  rowins .rows-below curset
+  1 edrow +! 
+  home ; 
 
 : delrow \ -- 
   home edpoint 
@@ -136,6 +146,7 @@ edlim maxcol 1+ / constant maxrow
   if row< curleft .row>> curset exit then
   edpoint eol edcol @       \ ad1 chars#
   curup eol 
+  maxcol edcol @ - 1- min   \ chars to be moved
   edpoint 1+                \ ad2 
   swap move 
   edcol @ 1+ edrow @ 2>r    \ the final cur pos
@@ -148,8 +159,7 @@ edlim maxcol 1+ / constant maxrow
 
 : refresh-screen \ --
   page 0 maxcrows .rows curset ;
-
-\ _______________________________
+\ _______________________________________________________
 
 : sed \ --
   page initialize-sed
@@ -171,6 +181,8 @@ edlim maxcol 1+ / constant maxrow
           dr1 of delrow endof
           dr2 of delrow endof
           ins of insrow endof
+          bot of bottom endof
+          top of attop endof
           ref of refresh-screen endof
           exi of 0= endof
         endcase
@@ -178,3 +190,4 @@ edlim maxcol 1+ / constant maxrow
   until ;
 
 base ! 
+
