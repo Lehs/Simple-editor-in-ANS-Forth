@@ -7,3 +7,7 @@ secondary to show a part of the buffer on the screen.
 
 The editor should have no wordwrap and each row could contain a maximum of 63 characters,
 which is enough for source files of Forth code.
+
+To be done: 
+scrolling using the variable TOPROW
+load and save files
