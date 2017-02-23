@@ -1,8 +1,9 @@
-\ Simple Editor - SED     2017-02-22 19:17 Greenwich Time
+\ Simple Editor - SED     2017-02-23 13:13 Greenwich Time
 
 base @ decimal
 0x80000 constant edlim
 edlim allocate throw constant edbuf 
+: clear-edbuf  edbuf edlim blank ;
 
 variable edrow
 variable edcol
@@ -12,6 +13,46 @@ variable toprow       \ row number at the top of the screen
 63 constant maxcol
  6 constant lgmc
 edlim maxcol 1+ / constant maxrow
+
+variable opfile
+variable fid
+
+80 constant mxfn
+
+create filename mxfn allot align
+
+: rows# \ -- n
+  edbuf edlim -trailing
+  nip lgmc rshift 1+ ;
+
+: getfilename \ -- ad n
+  0 0 at-xy mxfn spaces
+  0 0 at-xy ." File name: "
+  filename dup mxfn accept ;
+
+: createfile \ --
+  getfilename r/w create-file throw fid ! 
+  true opfile ! ;
+
+: openfile \ --
+  getfilename r/w open-file throw fid ! 
+  true opfile ! ;
+
+: resetfile \ --
+  0. fid @ reposition-file throw ;
+
+: saveopen \ --
+  rows# 0
+  do i lgmc lshift edbuf + maxcol -trailing 
+     fid @ write-line throw
+  loop ;
+
+: loadtext \ --
+  clear-edbuf maxrow 1+ 0
+  do i lgmc lshift edbuf + maxcol 
+     fid @ read-line throw nip 0=
+     if leave then 
+  loop ;
 
 : crow> \ -- row    cursore row on screen
   edrow @ toprow @ - ;
@@ -31,14 +72,13 @@ edlim maxcol 1+ / constant maxrow
 : attop  0 edrow ! home ;
 
 : bottom \
-  edbuf edlim 1- -trailing
-  nip lgmc rshift edrow ! curdown home ;
+  rows# edrow ! home ;
 
 : eol \ --
   crow> lgmc lshift edbuf + maxcol 1+ -trailing
   edcol ! drop curset ;
-\ _______________________________________________________
 
+\ _______________________________________________________
 
 \ gforth codes
 0x80000000 value cul
@@ -59,16 +99,21 @@ edlim maxcol 1+ / constant maxrow
 127 value bs2
  10 value cr1
  13 value cr2
- 12 value ref
+ 12 value ref   \ ctrl l
   5 value exi   \ ctrl e
   2 value bot   \ ctrl b
  20 value top   \ ctrl t 
+ 19 value sav   \ ctrl s
+ 15 value ope   \ ctrl o
+ 24 value sa2   \ ctrl x
+ 14 value new   \ ctrl n
 
 : initialize-sed \ --
   0 edrow !
   0 edcol !
   0 toprow !
-  edbuf edlim blank ;
+  false opfile !
+  clear-edbuf ;
 
 \ cursore position in buffert
 : edpoint \ -- ad 
@@ -156,9 +201,28 @@ edlim maxcol 1+ / constant maxrow
 
 : delch \ --
   curright backsp ;
+\ _______________________________________________________
 
 : refresh-screen \ --
   page 0 maxcrows .rows curset ;
+  
+: savefile \ --
+  opfile @ 
+  if resetfile
+  else createfile refresh-screen
+  then saveopen ;
+
+: loadfile \ --
+  page 
+  openfile
+  loadtext
+  refresh-screen ;
+
+: closexit \ false -- true
+  opfile @ 
+  if fid @ close-file throw then 0= ;
+
+: clearall clear-edbuf refresh-screen false opfile ! ;
 \ _______________________________________________________
 
 : sed \ --
@@ -184,7 +248,11 @@ edlim maxcol 1+ / constant maxrow
           bot of bottom endof
           top of attop endof
           ref of refresh-screen endof
-          exi of 0= endof
+          sav of savefile endof
+          sa2 of savefile endof
+          ope of loadfile endof
+          new of clearall endof
+          exi of closexit endof
         endcase
      then
   until ;
