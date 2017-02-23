@@ -14,7 +14,7 @@ extendable editor that increase the productivity coding in Forth. In some consol
 possible to use the mouse for marking, copying and pasting, which is nice, but else it might 
 be a good thing not all the time fumbling around after the mouse.
 
-To be done: scrolling using the variable TOPROW, fast cursor movments, load and save files.
+To be done: scrolling using the variable TOPROW, fast cursor movments.
 
 So far only tested for GForth+Windows. Different possibilities for the implementation of EKEY
 will cause problems for use in all ANS Forth systems.
