@@ -1,4 +1,4 @@
-\ Simple Editor - SED     2017-02-23 13:13 Greenwich Time
+\ Simple Editor - SED     2017-02-24 11:42 Greenwich Time
 
 base @ decimal
 0x80000 constant edlim
@@ -13,6 +13,26 @@ variable toprow       \ row number at the top of the screen
 63 constant maxcol
  6 constant lgmc
 edlim maxcol 1+ / constant maxrow
+
+: bl> \ ad1 n1 -- ad2 n2 
+  begin over c@ bl <> over 0> and
+  while 1 under+ 1-
+  repeat ;
+
+: nobl> \ ad1 n1 -- ad2 n2
+  begin over c@ bl = over 0> and
+  while 1 under+ 1-
+  repeat ;
+
+: <bl \ ad1 n1 -- ad2 n2
+  begin over dup c@ bl <> swap edbuf > and
+  while -1 under+ 1+
+  repeat ;
+
+: <nobl \ ad1 n1 -- ad2 n2
+  begin over dup c@ bl = swap edbuf > and
+  while -1 under+ 1+
+  repeat ;
 
 variable opfile
 variable fid
@@ -30,7 +50,7 @@ create filename mxfn allot align
   0 0 at-xy ." File name: "
   filename dup mxfn accept ;
 
-: createfile \ --
+: createfile \ -- 
   getfilename r/w create-file throw fid ! 
   true opfile ! ;
 
@@ -41,9 +61,16 @@ create filename mxfn allot align
 : resetfile \ --
   0. fid @ reposition-file throw ;
 
+: lf/cr \ ad1 n1 -- ad2 n2    make use of filename buffer
+  tuck filename swap  \ n1 ad1 fad n1 
+  move                \ n1
+  filename swap       \ fad n1
+  2dup + 13 swap c!   \ fad n1 (13 fad+n1)
+  1 + ;               \ fad n1+1
+
 : saveopen \ --
   rows# 0
-  do i lgmc lshift edbuf + maxcol -trailing 
+  do i lgmc lshift edbuf + maxcol -trailing lf/cr
      fid @ write-line throw
   loop ;
 
@@ -56,11 +83,10 @@ create filename mxfn allot align
 
 : crow> \ -- row    cursore row on screen
   edrow @ toprow @ - ;
-
+  
 : curset  edcol @ crow> at-xy ;
 : currowmove  crow> + 0 max toprow @ + edrow ! curset ;
 : curcolmove  edcol @ + 0 max maxcol min edcol ! curset ;
-  
 
 \ ___CASE ACTIONS not changing the buffer _______________
 
@@ -77,7 +103,6 @@ create filename mxfn allot align
 : eol \ --
   crow> lgmc lshift edbuf + maxcol 1+ -trailing
   edcol ! drop curset ;
-
 \ _______________________________________________________
 
 \ gforth codes
@@ -93,6 +118,8 @@ create filename mxfn allot align
 0x80000009 value del
 0xA0000009 value dr1
 0xC0000009 value dr2
+0x4000001B value wo<
+0x7000001B value wo>
 
 \ general codes
   8 value bs1
@@ -107,6 +134,8 @@ create filename mxfn allot align
  15 value ope   \ ctrl o
  24 value sa2   \ ctrl x
  14 value new   \ ctrl n
+  1 value w1<   \ ctrl a
+  6 value w1>   \ ctrl f
 
 : initialize-sed \ --
   0 edrow !
@@ -124,9 +153,18 @@ create filename mxfn allot align
 : >edbuf \ c --
   edpoint c! ;
 
-\ type rest of row
-: .row>> \ -- 
-  edpoint maxcol edcol @ - 1+ curset type ; 
+: >colrow \ ad -- 
+  edbuf - dup maxcol and edcol !
+  lgmc rshift edrow ! ;
+
+: edadn \ -- ad n
+  edpoint edlim over edbuf - - ;
+
+\ type rest of row 
+: .row>> \ --
+
+  edpoint maxcol edcol @ - 1+ curset type ;
+
 
 : .row \ row --
   edrow @ swap edrow !
@@ -218,11 +256,19 @@ create filename mxfn allot align
   loadtext
   refresh-screen ;
 
-: closexit \ false -- true
+: closed \ -- 
   opfile @ 
-  if fid @ close-file throw then 0= ;
+  if fid @ close-file throw then ;
 
-: clearall clear-edbuf refresh-screen false opfile ! ;
+: clearall \ --
+  closed clear-edbuf refresh-screen 
+  false opfile ! attop ;
+
+: nextword \ --
+  edadn -trailing bl> nobl> drop >colrow curset ;
+
+: prevword \ --
+  edadn <bl <nobl <bl nobl> drop >colrow curset ;
 \ _______________________________________________________
 
 : sed \ --
@@ -252,10 +298,13 @@ create filename mxfn allot align
           sa2 of savefile endof
           ope of loadfile endof
           new of clearall endof
-          exi of closexit endof
+          wo< of prevword endof
+          w1< of prevword endof
+          wo> of nextword endof
+          w1> of nextword endof
+          exi of closed 0= endof
         endcase
      then
   until ;
 
 base ! 
-
